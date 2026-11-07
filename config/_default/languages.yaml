@@ -1,0 +1,26 @@
+zh:
+  languageName: 中文
+  languageCode: zh-CN
+  weight: 1
+  params:
+    DateFormat: "2006年1月2日"
+en:
+  languageName: English
+  languageCode: en-US
+  weight: 2
+  params:
+    description: "Notes on network security: sharing and learning"
+    homeInfoParams:
+      Title: "Hi, I'm sch2c-sec 👋"
+      Content: "Notes on network security: sharing and learning"
+  menus:
+    main:
+      - name: Posts
+        url: /posts/
+        weight: 1
+      - name: Tags
+        url: /tags/
+        weight: 2
+      - name: About
+        url: /about/
+        weight: 3
