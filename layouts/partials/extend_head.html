@@ -1,0 +1,329 @@
+{{- if and hugo.IsMultilingual (ne .Kind "404") }}
+{{- $alt := dict }}
+{{- range .AllTranslations }}{{ $alt = merge $alt (dict .Language.Lang .RelPermalink) }}{{ end }}
+<script>
+/* 默认语言取自浏览器语言偏好；用户手动切换过则以 pref-lang 为准 */
+(function () {
+  var cur = {{ .Language.Lang | jsonify | safeJS }};
+  var alt = {{ $alt | jsonify | safeJS }};
+  var pref = null;
+  try { pref = localStorage.getItem('pref-lang'); } catch (e) {}
+  if (!pref) {
+    var langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+    pref = 'en';
+    for (var i = 0; i < langs.length; i++) {
+      var l = String(langs[i] || '').toLowerCase();
+      if (l.indexOf('zh') === 0) { pref = 'zh'; break; }
+      if (l.indexOf('en') === 0) break;
+    }
+  }
+  if (pref !== cur && alt[pref]) location.replace(alt[pref] + location.search + location.hash);
+})();
+</script>
+{{- end }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ── 字体 ── */
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+code, pre, kbd {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.875em;
+}
+
+/* ── 文字选中橙色 ── */
+::selection {
+  background: rgba(255, 107, 53, 0.25);
+  color: inherit;
+}
+
+
+/* ── 链接 hover 下划线动画 ── */
+.post-content a {
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1px;
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  transition: background-size 0.25s ease;
+}
+.post-content a:hover {
+  background-size: 100% 1px;
+}
+
+/* ── 代码块（参考 beUI CodeBlock）：外层"画框"带标题栏，里面嵌一块与页面同色的"代码屏" ── */
+:root {
+  --cb-frame: #f5f5f5;
+  --cb-line: rgba(0, 0, 0, 0.08);
+  --tk-fg: #0e1116;   --tk-kw: #a0111f;  --tk-str: #032563;  --tk-const: #023b95;
+  --tk-fn: #622cbc;   --tk-var: #702c00; --tk-tag: #024c1a;  --tk-cm: #66707b;
+}
+:root[data-theme="dark"] {
+  --cb-frame: rgb(38, 39, 42);
+  --cb-line: rgba(255, 255, 255, 0.08);
+  --tk-fg: #f0f3f6;   --tk-kw: #ff9492;  --tk-str: #addcff;  --tk-const: #91cbff;
+  --tk-fn: #dbb7ff;   --tk-var: #ffb757; --tk-tag: #72f088;  --tk-cm: #bdc4cc;
+}
+
+.cb {
+  --code-block-bg: var(--theme);
+  margin: 1.1rem 0;
+  border-radius: 16px;
+  background: var(--cb-frame);
+  overflow: hidden;
+}
+.cb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px 8px 16px;
+}
+.cb-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.cb-lang {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--theme);
+  font: 600 10px/1 "JetBrains Mono", monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--secondary);
+}
+.cb-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 12px/1 "JetBrains Mono", monospace;
+  color: var(--primary);
+}
+.cb-copy {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--cb-line);
+  border-radius: 50%;
+  background: var(--cb-frame);
+  color: var(--secondary);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.cb-copy:hover { color: var(--primary); }
+.cb-copy svg { grid-area: 1 / 1; width: 14px; height: 14px; }
+.cb-copy .cb-i-check { display: none; color: var(--tk-tag); }
+.cb-copy.is-copied .cb-i-copy { display: none; }
+.cb-copy.is-copied .cb-i-check { display: block; }
+
+.cb-body {
+  margin: 0 8px 8px;
+  border-radius: 8px;
+  background: var(--theme);
+  overflow: hidden;
+}
+.post-content .cb .highlight:not(table) { margin: 0; border-radius: 0; }
+.post-content .cb pre { margin: 0; font-size: 13px; }
+.post-content .cb pre code {
+  padding: 16px 0;
+  border-radius: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--tk-fg);
+}
+.post-content .cb .chroma .line { padding: 0 20px; }
+.post-content .cb .chroma .line .cl { padding: 0; }
+.cb .copy-code { display: none !important; }
+
+/* 语法配色：GitHub High Contrast，与 beUI 一致 */
+.cb .chroma { color: var(--tk-fg); }
+.cb .chroma :is(.k,.kp,.kr,.kn,.kd,.o,.ow,.sa,.gr,.gt,.err) { color: var(--tk-kw); }
+.cb .chroma :is(.kc,.kt,.na,.nb,.bp,.no,.py,.m,.mb,.mf,.mh,.mi,.il,.mo,.se,.gh,.gu) { color: var(--tk-const); }
+.cb .chroma :is(.s,.sb,.sc,.dl,.s2,.si,.sx,.s1,.ss) { color: var(--tk-str); }
+.cb .chroma :is(.nf,.fm,.nd) { color: var(--tk-fn); }
+.cb .chroma :is(.nc,.ni,.ne,.nl,.nn,.nv,.vc,.vg,.vi,.vm) { color: var(--tk-var); }
+.cb .chroma :is(.nt,.sr,.gi) { color: var(--tk-tag); }
+.cb .chroma :is(.c,.ch,.cm,.c1,.cs,.cp,.cpf,.sd,.sh) { color: var(--tk-cm); font-style: normal; font-weight: 400; }
+.cb .chroma :is(.o,.ow) { font-weight: 400; }
+.cb .chroma .hl { background: rgba(128, 128, 128, 0.14); box-shadow: inset 2px 0 0 #3b82f6; }
+.cb .chroma .gd { color: inherit; background: rgba(239, 68, 68, 0.12); }
+.cb .chroma .gi { color: inherit; background: rgba(34, 197, 94, 0.12); }
+
+/* ── 卡片摘要 & 文章页 description 隐藏 ── */
+.post-entry .entry-content,
+.post-description {
+  display: none;
+}
+
+/* ── 卡片尺寸收紧 ── */
+.post-entry {
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 0.5rem;
+}
+.post-entry:active {
+  transform: none;
+}
+.entry-header h2 {
+  font-size: 1.05rem;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.entry-footer {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+}
+
+/* ── TOC 完全重设计 ── */
+
+/* TOC 容器 */
+.toc {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.025);
+  padding: 0.75rem 1rem;
+  margin-bottom: 2rem;
+}
+[data-theme="dark"] .toc {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* 标签行 */
+.toc details summary {
+  cursor: pointer;
+  margin-inline-start: 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.toc details summary::-webkit-details-marker { display: none; }
+
+/* "Table of Contents" 文字 */
+.toc .details {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+/* 展开/收起箭头 —— CSS 三角形，不依赖字体渲染 */
+.toc details summary::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid rgb(255, 107, 53);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+.toc details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+/* 内容区域 */
+.toc .inner {
+  margin: 0.6rem 0 0 0;
+  padding: 0;
+  opacity: 1;
+}
+
+/* 列表项 */
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.toc li {
+  margin: 0;
+}
+.toc a {
+  display: block;
+  padding: 0.22rem 0;
+  font-size: 0.85rem;
+  color: var(--secondary);
+  text-decoration: none;
+  box-shadow: none !important;      /* 覆盖 PaperMod 的 hover 下划线 */
+  position: relative;
+  z-index: 1;
+  transition: color 0.15s;
+  line-height: 1.5;
+}
+.toc a:hover,
+.toc-link-active {
+  color: rgb(255, 107, 53) !important;
+  box-shadow: none !important;
+}
+
+/* 滑动 pill */
+.toc-pill {
+  position: absolute;
+  left: -0.6rem;
+  right: -0.6rem;
+  top: 0;
+  height: 28px;
+  background: rgba(255, 107, 53, 0.1);
+  border-radius: 5px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 0;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              height   0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity  0.2s ease;
+}
+
+/* 二级标题缩进 */
+.toc li ul {
+  margin-inline-start: 0.75rem;
+}
+.toc li ul a {
+  font-size: 0.8rem;
+}
+
+.toc details summary,
+.toc details[open] summary {
+  cursor: pointer;
+}
+
+/* ── 标题字间距 ── */
+h1, h2, h3 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* ── 语言切换：导航栏最右侧只留一个 文/A 图标，点击即切换语言 ──
+   .nav-end 把「菜单 + 图标」包成一组，PaperMod 原有的两栏（左 logo / 右 菜单）布局与窄屏换行行为不变。
+   24×18 的 svg 盒内左右各有约 4px 留白，用 calc 扣掉，让图标墨迹的右缘与菜单文字的右缘对齐，
+   图标与"关于"之间的可见间距也和菜单项之间一样宽。选择器需压过 PaperMod 的 #menu / .nav a。 */
+.nav-end {
+  display: flex;
+}
+.nav-end #menu {
+  margin-inline-end: calc(var(--gap) - 4px);
+}
+.nav-end .lang-toggle {
+  display: flex;
+  align-items: center;   /* 图标在 60px 高的热区内垂直居中，与菜单文字同一中线 */
+  margin-inline-end: calc(var(--gap) - 4px);
+}
+</style>

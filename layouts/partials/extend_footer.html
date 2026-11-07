@@ -1,0 +1,136 @@
+<style>
+.build-info {
+  text-align: center;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  color: var(--secondary);
+  opacity: 0.45;
+  margin-top: 2rem;
+  padding-bottom: 1rem;
+  letter-spacing: 0.03em;
+}
+.build-info a {
+  color: inherit;
+  text-decoration: none;
+}
+</style>
+<div class="build-info">
+  built with <a href="https://gohugo.io" target="_blank">hugo {{ hugo.Version }}</a> · {{ now.Format "2006" }}
+</div>
+
+<script>
+(function () {
+  var toc = document.querySelector('.toc');
+  if (!toc) return;
+  var inner = toc.querySelector('.inner');
+  if (!inner) return;
+  var links = Array.from(toc.querySelectorAll('a[href^="#"]'));
+  if (!links.length) return;
+
+  inner.style.position = 'relative';
+  var pill = document.createElement('div');
+  pill.className = 'toc-pill';
+  inner.insertBefore(pill, inner.firstChild);
+
+  var scrollActive = null;  /* IntersectionObserver 跟踪的章节 */
+  var hovering = false;
+
+  function movePill(link, snap) {
+    if (!link) return;
+    links.forEach(function (a) { a.classList.remove('toc-link-active'); });
+    link.classList.add('toc-link-active');
+
+    var li = link.closest('li');
+    if (!li) return;
+    var innerRect = inner.getBoundingClientRect();
+    var liRect   = li.getBoundingClientRect();
+    if (innerRect.height === 0) return;
+
+    var offsetY = liRect.top - innerRect.top;
+    if (snap) {
+      pill.style.transition = 'none';
+      requestAnimationFrame(function () { pill.style.transition = ''; });
+    }
+    pill.style.opacity   = '1';
+    pill.style.transform = 'translateY(' + offsetY + 'px)';
+    pill.style.height    = liRect.height + 'px';
+  }
+
+  /* ── hover：pill 跟鼠标 ── */
+  links.forEach(function (a) {
+    a.addEventListener('mouseenter', function () {
+      hovering = true;
+      movePill(a, false);
+    });
+  });
+  inner.addEventListener('mouseleave', function () {
+    hovering = false;
+    if (scrollActive) movePill(scrollActive, false);
+  });
+
+  var pairs = links.map(function (a) {
+    var id = decodeURIComponent(a.getAttribute('href').slice(1));
+    return { link: a, heading: document.getElementById(id) };
+  }).filter(function (p) { return p.heading; });
+
+  if (!pairs.length) return;
+
+  /* details open 后重新定位 */
+  var details = toc.querySelector('details');
+  if (details) {
+    details.addEventListener('toggle', function () {
+      if (details.open) movePill(scrollActive || pairs[0].link, true);
+    });
+  }
+
+  /* ── scroll：IntersectionObserver ── */
+  var obs = new IntersectionObserver(function (entries) {
+    var hit = entries
+      .filter(function (e) { return e.isIntersecting; })
+      .sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top; })[0];
+    if (hit) {
+      var pair = pairs.find(function (p) { return p.heading === hit.target; });
+      if (pair) {
+        scrollActive = pair.link;
+        if (!hovering) movePill(pair.link, false);
+      }
+    }
+  }, { rootMargin: '-5% 0px -72% 0px', threshold: 0 });
+
+  pairs.forEach(function (p) { obs.observe(p.heading); });
+
+  /* ── click ── */
+  links.forEach(function (a) {
+    a.addEventListener('click', function () {
+      var pair = pairs.find(function (p) { return p.link === a; });
+      if (pair) { scrollActive = pair.link; movePill(pair.link, false); }
+    });
+  });
+
+  /* 初始定位 */
+  scrollActive = pairs[0].link;
+  requestAnimationFrame(function () { movePill(pairs[0].link, true); });
+})();
+</script>
+
+<script>
+/* 代码块复制：去掉末尾换行，避免粘贴到终端时直接执行 */
+document.addEventListener('click', function (e) {
+  var btn = e.target.closest('.cb-copy');
+  if (!btn) return;
+  var code = btn.closest('.cb').querySelector('.cb-body code');
+  navigator.clipboard.writeText(code.textContent.replace(/\n+$/, '')).then(function () {
+    btn.classList.add('is-copied');
+    setTimeout(function () { btn.classList.remove('is-copied'); }, 1600);
+  });
+});
+</script>
+
+<script>
+/* 手动切换语言时记住选择，之后不再按浏览器语言自动跳转 */
+document.addEventListener('click', function (e) {
+  var a = e.target.closest('a.lang-toggle');
+  if (!a) return;
+  try { localStorage.setItem('pref-lang', a.dataset.lang); } catch (err) {}
+});
+</script>
