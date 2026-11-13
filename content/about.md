@@ -1,6 +1,8 @@
 +++
 title = '关于'
 hideMeta = true
+# 正文列举了所有文章主题，留在索引里会污染每个主题查询
+searchHidden = true
 ShowToc = false
 ShowBreadCrumbs = false
 ShowPostNavLinks = false
