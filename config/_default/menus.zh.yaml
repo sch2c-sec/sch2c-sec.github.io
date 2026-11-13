@@ -1,0 +1,16 @@
+main:
+  - name: 文章
+    url: /posts/
+    weight: 1
+  - name: 标签
+    url: /tags/
+    weight: 2
+  - name: 关于
+    url: /about/
+    weight: 3
+  # identifier 必须是 search：header.html 用 site.GetPage .KeyName 判断
+  # 是否为搜索页，从而挂上 Alt + / 快捷键
+  - identifier: search
+    name: 搜索
+    url: /search/
+    weight: 4

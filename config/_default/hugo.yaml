@@ -1,1 +1,8 @@
 defaultContentLanguage: zh
+
+# 搜索索引：PaperMod 的 layouts/_default/index.json 需要首页额外输出 JSON
+outputs:
+  home:
+    - HTML
+    - RSS
+    - JSON
