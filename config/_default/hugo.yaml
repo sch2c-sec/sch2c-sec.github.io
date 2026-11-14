@@ -2,10 +2,3 @@ defaultContentLanguage: zh
 
 # robots.txt：主题的 layouts/robots.txt 模板会输出 Disallow + Sitemap 行
 enableRobotsTXT: true
-
-# 搜索索引：PaperMod 的 layouts/_default/index.json 需要首页额外输出 JSON
-outputs:
-  home:
-    - HTML
-    - RSS
-    - JSON

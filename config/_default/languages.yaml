@@ -24,7 +24,3 @@ en:
       - name: About
         url: /about/
         weight: 3
-      - identifier: search
-        name: Search
-        url: /search/
-        weight: 4
