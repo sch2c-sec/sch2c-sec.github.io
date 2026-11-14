@@ -1,8 +1,6 @@
 +++
 title = '关于'
 hideMeta = true
-# 正文列举了所有文章主题，留在索引里会污染每个主题查询
-searchHidden = true
 ShowToc = false
 ShowBreadCrumbs = false
 ShowPostNavLinks = false
@@ -10,6 +8,8 @@ ShowPostNavLinks = false
 
 网络安全技术分享与学习记录。
 
-本站收录协议分析与安全运维方面的笔记，目前涵盖 DNS 报文结构与解析、TCP 状态机与异常流量识别、TLS 1.3 握手过程，以及 FortiGate IPS 引擎工作状态排查。
+本站收录协议分析与安全运维方面的笔记：抓包看到的字段怎么对上 RFC、异常流量长什么样、设备上那些状态计数器到底在数什么。写给以后的自己查。
+
+文章列表见 [文章](/posts/)，按主题找可以翻 [标签](/tags/)。
 
 - GitHub：[sch2c-sec](https://github.com/sch2c-sec)

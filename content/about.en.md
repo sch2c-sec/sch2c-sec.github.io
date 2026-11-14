@@ -1,8 +1,6 @@
 +++
 title = 'About'
 hideMeta = true
-# 正文列举了所有文章主题，留在索引里会污染每个主题查询
-searchHidden = true
 ShowToc = false
 ShowBreadCrumbs = false
 ShowPostNavLinks = false
@@ -10,6 +8,8 @@ ShowPostNavLinks = false
 
 Notes on network security: sharing and learning.
 
-This site collects notes on protocol analysis and security operations, currently covering DNS message format and parsing, the TCP state machine and anomalous traffic detection, and the TLS 1.3 handshake.
+Notes on protocol analysis and security operations: matching the fields in a capture against the RFC, recognising what anomalous traffic looks like, and working out what a device's state counters are actually counting. Written for my own later reference.
+
+Everything is listed under [Posts](/en/posts/); [Tags](/en/tags/) groups it by topic.
 
 - GitHub: [sch2c-sec](https://github.com/sch2c-sec)
