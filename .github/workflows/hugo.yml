@@ -34,6 +34,16 @@ jobs:
       - name: Build
         run: hugo --minify
 
+      # Pagefind 在 Hugo 产物上建索引，输出到 public/pagefind/。
+      # 用 extended 版（npx 默认就是），它带中文分词；索引范围只取正文，
+      # 排除代码块 .cb、目录 .toc、面包屑/元信息/标签/翻页，
+      # 否则 ASCII 拓扑图和 hex dump 会占掉索引大半、污染查询。
+      - name: Build search index
+        run: >-
+          npx -y pagefind@1.6.0 --site public
+          --root-selector "article.post-single"
+          --exclude-selectors ".cb, .breadcrumbs, .anchor, .post-meta, .paginav, .toc, .post-tags"
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

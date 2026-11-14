@@ -134,3 +134,103 @@ document.addEventListener('click', function (e) {
   try { localStorage.setItem('pref-lang', a.dataset.lang); } catch (err) {}
 });
 </script>
+
+<script>
+/* 搜索结果的滑动 pill —— 和上面目录的 toc-pill 同一套做法：
+   一块绝对定位的底色跟着 hover / 键盘选中的那一行滑。
+   pill 挂在 pagefind-modal-body（就是那个滚动容器）里，
+   绝对定位元素会跟着滚动内容一起走，所以滚动时不用额外校正。
+   注意组件是 defer 的 module，这段脚本跑的时候模态里面还是空的，
+   所以 DOM 一律惰性获取，不在启动时查。 */
+(function () {
+  var modal = document.querySelector('pagefind-modal');
+  if (!modal) return;
+
+  var ROWS = '.pf-result-card, .pf-heading-chip';
+  var pill = null, body = null, bound = false;
+
+  function hide() { if (pill) pill.style.opacity = '0'; }
+
+  /* 把 pill 收成 0×0 停回原点。它是绝对定位的，光把 opacity 设成 0 的话
+     尺寸和位移还在，会给滚动容器撑出几百像素的幽灵滚动区——搜不到结果时
+     容器只剩一行高，横竖两条滚动条就一起冒出来了。 */
+  function collapse() {
+    if (!pill || pill.style.opacity === '1') return;
+    pill.style.transition = 'none';
+    pill.style.transform  = 'translate3d(0,0,0)';
+    pill.style.width      = '0';
+    pill.style.height     = '0';
+    void pill.offsetWidth;            /* 强制回流，免得被合并成一次动画 */
+    pill.style.transition = '';
+  }
+
+  function ensure() {
+    body = modal.querySelector('pagefind-modal-body');
+    if (!body) return false;
+    body.style.position = 'relative';
+    if (!pill || !pill.isConnected) {
+      pill = document.createElement('div');
+      /* 类名不能用 pf- 前缀，会被组件的 all: revert 规则吃掉，理由见 extend_head */
+      pill.className = 'search-pill';
+      /* 淡出播完就收起。transitioncancel 也要管：关模态会让 dialog 变
+         display:none，淡出被打断，只有 cancel 没有 end。 */
+      var onFade = function (e) { if (e.propertyName === 'opacity') collapse(); };
+      pill.addEventListener('transitionend', onFade);
+      pill.addEventListener('transitioncancel', onFade);
+      body.insertBefore(pill, body.firstChild);
+    }
+    if (!bound) {
+      bound = true;
+      body.addEventListener('mouseleave', hide);
+      /* 换关键词会整段重排结果，先把 pill 收掉，别让它从旧位置滑过去。
+         只盯 pagefind-results：盯整个 modal 的话，插入 pill 本身也算一次
+         childList 变动，第一次 hover 会被自己收掉。 */
+      var results = modal.querySelector('pagefind-results');
+      if (results) new MutationObserver(hide).observe(results, { subtree: true, childList: true });
+      /* 关闭时直接收起，别让旧尺寸活到下次打开 */
+      var dlg = modal.querySelector('dialog.pf-modal');
+      if (dlg) dlg.addEventListener('close', function () { hide(); collapse(); });
+    }
+    return true;
+  }
+
+  function move(row) {
+    if (!row || !ensure() || !body.contains(row)) return;
+    var br = body.getBoundingClientRect();
+    var rr = row.getBoundingClientRect();
+    var x = rr.left - br.left - body.clientLeft + body.scrollLeft;
+    var y = rr.top  - br.top  - body.clientTop  + body.scrollTop;
+    /* 收起状态下 pill 是 0×0 停在原点的，直接改尺寸会看到它从左上角长出来，
+       所以先无过渡地摆到位，再淡入 */
+    var snap = pill.style.opacity !== '1';
+    if (snap) pill.style.transition = 'none';
+    pill.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
+    pill.style.width   = rr.width + 'px';
+    pill.style.height  = rr.height + 'px';
+    if (snap) {
+      void pill.offsetWidth;
+      pill.style.transition = '';
+    }
+    pill.style.opacity = '1';
+  }
+
+  /* 鼠标：用 mouseover 代理，结果每次输入都会重建，逐个绑 mouseenter 会漏 */
+  modal.addEventListener('mouseover', function (e) {
+    var t = e.target;
+    var row = t && t.closest ? t.closest(ROWS) : null;
+    if (row) move(row);
+  });
+
+  /* 键盘上下：组件把 data-pf-selected 打在被选中的链接上 */
+  new MutationObserver(function (muts) {
+    for (var i = 0; i < muts.length; i++) {
+      var t = muts[i].target;
+      if (t.hasAttribute && t.hasAttribute('data-pf-selected')) {
+        move(t.closest(ROWS));
+        return;
+      }
+    }
+  }).observe(modal, { subtree: true, attributes: true, attributeFilter: ['data-pf-selected'] });
+
+})();
+</script>

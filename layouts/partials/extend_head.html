@@ -327,3 +327,189 @@ h1, h2, h3 {
   margin-inline-end: calc(var(--gap) - 4px);
 }
 </style>
+
+{{- /* ── 搜索：Pagefind Component UI ──
+     /pagefind/ 下的资源不在仓库里，由 CI 的 "Build search index" 步骤在 hugo 产物上生成。
+     因此 `hugo server` 下搜索不可用，本地要验证得先 `hugo --minify` 再跑一次 pagefind。
+     模块脚本默认 defer，不阻塞渲染；索引和 wasm 要到第一次输入才加载。 */ -}}
+<link rel="stylesheet" href="{{ "pagefind/pagefind-component-ui.css" | relURL }}">
+<script type="module" src="{{ "pagefind/pagefind-component-ui.js" | relURL }}"></script>
+<script type="module">
+/* 结果链接带 ?highlight=…，落地页再把词标出来。
+   mark.js 那一包 gzip 后约 9KB，所以只在 URL 真的带参数时才动态 import。 */
+if (new URLSearchParams(location.search).has('highlight')) {
+  var ctx = document.querySelector('article.post-single .post-content');
+  if (ctx) {
+    import({{ "pagefind/pagefind-highlight.js" | relURL }}).then(function (m) {
+      new m.default({
+        highlightParam: 'highlight',
+        markContext: ctx,                 /* 只标正文，别去动导航和页脚 */
+        markOptions: {
+          className: 'pagefind-highlight',
+          /* 代码块没进索引，就别在代码块里标词，否则和搜索结果对不上 */
+          exclude: ['[data-pagefind-ignore]', '[data-pagefind-ignore] *', '.cb', '.cb *'],
+        },
+        addStyles: false,                 /* 自带的是 background: yellow，样式见下面 */
+      });
+    }).catch(function () { /* 索引没生成时静默跳过 */ });
+  }
+}
+</script>
+
+<style>
+/* ── Pagefind 配色：全部接到 PaperMod 的变量上，跟着 data-theme 自动翻 ── */
+:root {
+  --pf-background: var(--entry);
+  --pf-text: var(--primary);
+  --pf-text-secondary: var(--secondary);
+  --pf-text-muted: var(--secondary);
+  --pf-border: var(--border);
+  --pf-border-focus: var(--tertiary);
+  --pf-hover: var(--code-bg);
+  --pf-skeleton: var(--code-bg);
+  --pf-skeleton-shine: var(--tertiary);
+  --pf-mark: #ff6b35;          /* 命中词用和 ::selection 同一个橙 */
+  --pf-outline-focus: #ff6b35;
+  --pf-font: inherit;          /* 用站点的 Inter，而不是组件自带的 system-ui 栈 */
+  --pf-border-radius: 8px;
+}
+/* 组件只在 :root 定义了亮色阴影（它的暗色靠 [data-pf-theme]，我们不用那套） */
+:root[data-theme="dark"] {
+  --pf-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --pf-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --pf-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --pf-modal-backdrop: rgba(0, 0, 0, 0.7);
+}
+
+/* 正文里的命中高亮，和 ::selection 一致 */
+.pagefind-highlight {
+  background: rgba(255, 107, 53, 0.28);
+  border-radius: 2px;
+}
+
+/* ── 导航栏里的搜索图标 ──
+   组件自带的 .pf-trigger-btn 是个带边框的输入框样子（width:100%、36px 高），
+   这里剥成纯图标，和右边的 文/A 一组。组件 CSS 用了 :is(*,#\#) 三连把权重顶到
+   (3,1,0)，作者样式比不过，只能 !important。
+   min-width 是给模块加载前占位的，避免图标弹出来时导航抖一下。 */
+pagefind-modal-trigger {
+  display: flex;
+  align-items: center;
+  min-width: 18px;
+  min-height: 18px;
+  margin-inline-end: calc(var(--gap) - 4px);
+}
+pagefind-modal-trigger .pf-trigger-btn {
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  background: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+pagefind-modal-trigger .pf-trigger-icon {
+  width: 18px !important;
+  height: 18px !important;
+  background: var(--primary) !important;
+}
+
+/* <pagefind-modal> 自己不该占布局：里面的 <dialog> 未打开时由 UA 置为 display:none，
+   打开后进 top layer，位置与这个宿主元素无关。 */
+pagefind-modal {
+  display: contents;
+}
+
+/* ── 结果区：hover / 键盘选中用一条滑动 pill，和文章目录是同一套手法 ──
+   组件原本是「每行自己加边框 + 阴影」，一行一行各闪各的；改成卡片透明、
+   由一条 pill 在行间滑动。pill 的 DOM 与定位逻辑在 extend_footer.html。 */
+.pf-result-card,
+.pf-heading-chip {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+.pf-result-card:hover,
+.pf-heading-chip:hover {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+/* 键盘上下选中时组件会给整行铺底，交给 pill 做，这里也清掉。
+   :focus-visible 的那条橙色焦点环不碰——Tab 过来的人要靠它。 */
+.pf-result-card:has([data-pf-selected]),
+.pf-heading-chip:has([data-pf-selected]) {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+/* 组件默认 hover 给标题加下划线 */
+.pf-result-link:hover,
+.pf-heading-link:hover {
+  text-decoration: none !important;
+}
+
+/* pill 底色刻意用中性色，而不是目录那种 rgba(255,107,53,.1) 的橙：
+   橙底会吃掉 <mark> 的橙字。实测 ΔE(mark, 底色)——
+     亮色：白底 86.1 → 橙 pill 78.9 → 中性 pill 84.7
+     暗色：卡片底 90.9 → 橙 pill 81.6 → 中性 pill 89.4
+   想换回和目录一致的橙，只改下面这一行即可。 */
+pagefind-modal-body {
+  --search-pill: var(--pf-hover);
+}
+/* 类名刻意不以 pf- 开头。组件 CSS 里有一条权重 (2,1,0) 的隔离规则：
+     :is(*,#\#):is(*,#\#) :is([class^="pf-"],[class*=" pf-"]):not(svg,svg *) { all: revert }
+   用来挡住宿主站点的样式。用 pf- 前缀的类名会被它整条 revert 掉——
+   不只是背景没了，连 position: absolute 都保不住，pill 会直接失效。 */
+.search-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  background: var(--search-pill);
+  border-radius: var(--pf-border-radius);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 0;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              width    0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              height   0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity  0.2s ease;
+}
+/* 内容压在 pill 之上；这两个类组件已经给了 position: relative */
+pagefind-modal-body .pf-result-card,
+pagefind-modal-body .pf-heading-chip {
+  z-index: 1;
+}
+
+/* ── 滚动条 ──
+   组件对自身元素上了 all: initial，又有一条权重 (2,1,0) 的 all: revert，
+   把 color-scheme 一并重置成 normal。于是暗色主题下模态里的原生滚动条
+   仍按亮色画，是一块白方块。显式继承回来，权重打不过就上 !important。 */
+pagefind-modal,
+dialog.pf-modal,
+pagefind-modal-header,
+pagefind-modal-body,
+pagefind-modal-footer,
+pagefind-input,
+pagefind-summary,
+pagefind-results,
+pagefind-keyboard-hints {
+  color-scheme: inherit !important;
+}
+/* 再把滚动条调细、去掉轨道。Chrome 121+/Firefox 走标准属性，
+   Safari 老版本只认 ::-webkit-，两套都给。 */
+pagefind-modal-body {
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--tertiary) transparent !important;
+}
+pagefind-modal-body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+pagefind-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+pagefind-modal-body::-webkit-scrollbar-thumb {
+  background: var(--tertiary);
+  border-radius: 4px;
+}
+</style>

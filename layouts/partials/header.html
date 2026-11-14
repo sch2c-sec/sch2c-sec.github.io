@@ -83,6 +83,10 @@
                 </li>
                 {{- end }}
             </ul>
+            {{- /* 搜索：点图标或按 ⌘K / Ctrl+K 打开 Pagefind 模态。
+                   这个元素里不要塞任何子节点——组件 render() 第一行就是 innerHTML = ""。
+                   compact 去掉按钮里的文字，hide-shortcut 去掉那颗 ⌘K 小胶囊。 */ -}}
+            <pagefind-modal-trigger compact hide-shortcut></pagefind-modal-trigger>
             {{- if (not site.Params.disableLangToggle) }}
             {{- if hugo.IsMultilingual }}
             {{- /* 导航栏最右侧只留一个 文/A 图标，点击切到下一种语言（按 weight 循环，目前即 zh 与 en 互切）。有对应译文就跳到译文页，没有则落到目标语言首页 */ -}}
@@ -102,3 +106,10 @@
         </div>
     </nav>
 </header>
+{{- /* lang 显式传给 Pagefind：索引按语言分片，zh 页只查 zh 那份、en 只查 en 那份。
+       不传时它读 <html lang>（现在正好是 zh / en），显式写死省得以后改 languageCode 时被带跑。
+       highlight-param 让结果链接带上 ?highlight=…，落地页由 extend_head 里的脚本负责标词。
+       <pagefind-modal> 不写子元素时，组件自己渲染 输入框 + 结果 + 键盘提示 一整套。 */ -}}
+<pagefind-config lang="{{ .Language.Lang }}" bundle-path="{{ "pagefind/" | relURL }}"
+    highlight-param="highlight"></pagefind-config>
+<pagefind-modal reset-on-close></pagefind-modal>
